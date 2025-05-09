@@ -9,10 +9,78 @@ from schemas.size_schemas import Size, SizeData
 from schemas.category_schemas import Category, CategoryData
 from schemas.color_schemas import Color, ColorData
 from schemas.product_schemas import Product, ProductData
-from api.sizes import get_all_sizes, post_sizes
-from api.categories import get_all_categories, post_categories
-from api.colors import get_all_colors, post_colors
+from schemas.product_variant_schemas import ProductVariantData, ProductVariant
+from api.size import get_all_sizes, post_sizes
+from api.category import get_all_categories, post_categories
+from api.color import get_all_colors, post_colors
 from api.product import get_all_products, post_products
+from api.produt_variant import get_all_pvs, post_pvs
+
+
+@mcp.tool()
+async def make_get_all_product_variants_request(
+    ctx: Context[Any, AppContext],
+) -> Union[list[ProductVariant], CallToolResult]:
+    """
+    Retrieve all product variants from the MemCommerce API.
+
+    Product variants combine size, color, and price with a product, and represent
+    what users actually select when buying something. This tool returns all such
+    combinations currently available in the system.
+
+    Args:
+        ctx (Context): The MCP context with the lifespan API URL.
+
+    Returns:
+        Union[list[ProductVariant], CallToolResult]: A list of all product variants,
+        or a CallToolResult if the request failed.
+    """
+    api_url = ctx.request_context.lifespan_context.memcommerce_api_url
+
+    try:
+        variants = await get_all_pvs(api_url)
+    except MemCommerceAPIException as e:
+        return CallToolResult(
+            isError=True,
+            content=[TextContent(type="text", text=f"MemCommerce API Error: {e}")],
+        )
+
+    return variants
+
+
+@mcp.tool()
+async def add_product_variants(
+    variants_data: list[ProductVariantData],
+    ctx: Context[Any, AppContext],
+) -> Union[list[ProductVariant], CallToolResult]:
+    """
+    Add one or more product variants to the MemCommerce system.
+
+    A product variant defines a specific purchasable option for a product,
+    based on its color, size, and price. For example, "Adidas T-Shirt, Black, M, $29.99".
+
+    Args:
+        variants_data (list[ProductVariantData]): A list of variant definitions, each including:
+            - `price`: Price of the variant
+            - `product_id`: ID of the associated product
+            - `color_id`: ID of the selected color
+            - `size_id`: ID of the selected size
+
+    Returns:
+        Union[list[ProductVariant], CallToolResult]: The created product variants on success,
+        or a CallToolResult describing the error.
+    """
+    api_url = ctx.request_context.lifespan_context.memcommerce_api_url
+
+    try:
+        variants = await post_pvs(variants_data, api_url)
+    except MemCommerceAPIException as e:
+        return CallToolResult(
+            isError=True,
+            content=[TextContent(type="text", text=f"MemCommerce API Error: {e}")],
+        )
+
+    return variants
 
 
 @mcp.tool()
