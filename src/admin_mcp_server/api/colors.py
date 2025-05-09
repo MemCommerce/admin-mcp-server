@@ -8,7 +8,7 @@ from exceptions import MemCommerceAPIException
 async def get_all_colors(base_url: str) -> list[Color]:
     url = f"{base_url}/colors/"
     data = await safe_request("GET", url)
-    colors = [ColorData(**color) for color in data]
+    colors = [Color(**color) for color in data]
     return colors
 
 

@@ -8,11 +8,13 @@ from exceptions import MemCommerceAPIException
 async def get_all_categories(base_url: str) -> list[Category]:
     url = f"{base_url}/categories/"
     data = await safe_request("GET", url)
-    categories = [CategoryData(**category) for category in data]
+    categories = [Category(**category) for category in data]
     return categories
 
 
-async def post_categories(categories_data: list[CategoryData], base_url: str) -> list[Category]:
+async def post_categories(
+    categories_data: list[CategoryData], base_url: str
+) -> list[Category]:
     url = f"{base_url}/categories/"
     post_requests = [
         safe_request("POST", url, json=category_data.model_dump())
