@@ -6,7 +6,146 @@ from mcp.types import CallToolResult, TextContent
 from config import mcp, AppContext
 from exceptions import MemCommerceAPIException
 from schemas.size_schemas import Size, SizeData
+from schemas.category_schemas import Category, CategoryData
+from schemas.color_schemas import Color, ColorData
 from api.sizes import get_all_sizes, post_sizes
+from api.categories import get_all_categories, post_categories
+from api.colors import get_all_colors, post_colors
+
+
+@mcp.tool()
+async def make_get_all_colors_request(
+    ctx: Context[Any, AppContext],
+) -> Union[list[Color], CallToolResult]:
+    """
+    Retrieve all available product colors from the MemCommerce API.
+
+    In MemCommerce, colors represent variant options for products based on their 
+    visual appearance (e.g., "Black", "White", "Navy"). Each color typically 
+    includes a label and a corresponding hex code for UI representation. This tool 
+    fetches the full list of colors currently registered in the system.
+
+    Args:
+        ctx (Context): The MCP context, which includes the lifespan context 
+        containing the MemCommerce API URL.
+
+    Returns:
+        Union[list[Color], CallToolResult]: A list of Color objects on success,
+        or a CallToolResult indicating an API error.
+    """
+    api_url = ctx.request_context.lifespan_context.memcommerce_api_url
+
+    try:
+        colors = await get_all_colors(api_url)
+    except MemCommerceAPIException as e:
+        return CallToolResult(
+            isError=True,
+            content=[TextContent(type="text", text=f"MemCommerce API Error: {e}")],
+        )
+
+    return colors
+
+
+
+@mcp.tool()
+async def add_colors(
+    colors_data: list[ColorData],
+    ctx: Context[Any, AppContext],
+) -> Union[list[Color], CallToolResult]:
+    """
+    Add one or more new product colors to the MemCommerce system.
+
+    In MemCommerce, colors are used to define visual variants of a product 
+    (e.g., "Red", "Blue", "Black"), each associated with a hex color code 
+    for accurate representation in the UI. This tool allows agents or automation 
+    to create new color entries by providing structured color data.
+
+    Args:
+        colors_data (list[ColorData]): A list of ColorData objects, each containing
+            a `name` (e.g., "Navy Blue") and a `hex` value (e.g., "#001F3F").
+
+    Returns:
+        Union[list[Color], CallToolResult]: A list of newly created Color objects on success,
+        or a CallToolResult indicating an API error.
+    """
+    api_url = ctx.request_context.lifespan_context.memcommerce_api_url
+
+    try:
+        colors = await post_colors(colors_data, api_url)
+    except MemCommerceAPIException as e:
+        return CallToolResult(
+            isError=True,
+            content=[TextContent(type="text", text=f"MemCommerce API Error: {e}")],
+        )
+
+    return colors
+
+
+
+@mcp.tool()
+async def add_categories(
+    categories_data: list[CategoryData],
+    ctx: Context[Any, AppContext],
+) -> Union[list[Category], CallToolResult]:
+    """
+    Add one or more new product categories to the MemCommerce system.
+
+    In MemCommerce, categories are used to group products into collections 
+    like "Hats", "Jackets", or "Socks". Each category requires a name and 
+    an optional description. This tool allows agents or automation to create 
+    multiple categories at once by providing a list of structured category data.
+
+    Args:
+        categories_data (list[CategoryData]): A list of CategoryData objects, each containing
+            a `name` and a `description`.
+
+    Returns:
+        Union[list[Category], CallToolResult]: A list of newly created Category objects on success,
+        or a CallToolResult indicating an API error.
+    """
+    api_url = ctx.request_context.lifespan_context.memcommerce_api_url
+
+    try:
+        categories = await post_categories(categories_data, api_url)
+    except MemCommerceAPIException as e:
+        return CallToolResult(
+            isError=True,
+            content=[TextContent(type="text", text=f"MemCommerce API Error: {e}")],
+        )
+
+    return categories
+
+
+@mcp.tool()
+async def make_get_all_categories_request(
+    ctx: Context[Any, AppContext],
+) -> Union[list[Category], CallToolResult]:
+    """
+    Retrieve all available product categories from the MemCommerce API.
+
+    In the MemCommerce system, categories represent high-level groupings of 
+    products such as "T-Shirts", "Shoes", or "Accessories". This data is used 
+    to organize products on the storefront and enables category-based navigation 
+    and filtering.
+
+    Returns:
+        Union[list[Category], CallToolResult]: A list of Category objects on success,
+        or a CallToolResult indicating an API error.
+    """
+    api_url = ctx.request_context.lifespan_context.memcommerce_api_url
+
+    try:
+        categories = await get_all_categories(api_url)
+    except MemCommerceAPIException as e:
+        return CallToolResult(
+            isError=True,
+            content=[TextContent(type="text", text=f"MemCommerce API Error: {e}")],
+        )
+
+    return categories
+
+
+
 
 
 @mcp.tool()
