@@ -1,3 +1,5 @@
+from typing import Any
+
 from httpx import AsyncClient, HTTPStatusError, RequestError
 
 from exceptions import MemCommerceAPIException
@@ -7,7 +9,7 @@ async def safe_request(
     method: str,
     url: str,
     **kwargs: dict,
-) -> dict:
+) -> Any:
     async with AsyncClient() as client:
         try:
             if method == "GET":
