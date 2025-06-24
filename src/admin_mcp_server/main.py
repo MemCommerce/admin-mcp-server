@@ -339,7 +339,7 @@ async def add_sizes(
 
 
 def main():
-    mcp.run(transport="stdio")
+    mcp.run(transport="streamable-http")
 
 
 if __name__ == "__main__":
