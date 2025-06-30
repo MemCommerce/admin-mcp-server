@@ -5,11 +5,16 @@ from mcp.types import CallToolResult, TextContent
 
 from config import mcp, AppContext
 from exceptions import MemCommerceAPIException
+from utils.image_utils import download_and_convert_image
 from schemas.size_schemas import Size, SizeData
 from schemas.category_schemas import Category, CategoryData
 from schemas.color_schemas import Color, ColorData
 from schemas.product_schemas import Product, ProductData
-from schemas.product_variant_schemas import ProductVariantData, ProductVariant
+from schemas.product_variant_schemas import (
+    ProductVariantData,
+    ProductVariant,
+    ProductVariantCreate,
+)
 from api.size import get_all_sizes, post_sizes
 from api.category import get_all_categories, post_categories
 from api.color import get_all_colors, post_colors
@@ -28,12 +33,18 @@ async def make_get_all_product_variants_request(
     what users actually select when buying something. This tool returns all such
     combinations currently available in the system.
 
-    Args:
-        ctx (Context): The MCP context with the lifespan API URL.
-
     Returns:
         Union[list[ProductVariant], CallToolResult]: A list of all product variants,
         or a CallToolResult if the request failed.
+
+        The ProductVariant Pydantic model attributes:
+            - id: str
+            - price: float
+            - product_id: str
+            - color_id: str
+            - size_id: str
+            - image_url: Optional[str] = None
+
     """
     api_url = ctx.request_context.lifespan_context.memcommerce_api_url
 
@@ -50,7 +61,7 @@ async def make_get_all_product_variants_request(
 
 @mcp.tool()
 async def add_product_variants(
-    variants_data: list[ProductVariantData],
+    variants_create: list[ProductVariantCreate],
     ctx: Context[Any, AppContext],
 ) -> Union[list[ProductVariant], CallToolResult]:
     """
@@ -60,17 +71,45 @@ async def add_product_variants(
     based on its color, size, and price. For example, "Adidas T-Shirt, Black, M, $29.99".
 
     Args:
-        variants_data (list[ProductVariantData]): A list of variant definitions, each including:
+        variants_create (list[ProductVariantCreate]): A list of variant definitions, each including:
             - `price`: Price of the variant
             - `product_id`: ID of the associated product
             - `color_id`: ID of the selected color
             - `size_id`: ID of the selected size
+            - `image_url`: Optional string for image url
 
     Returns:
         Union[list[ProductVariant], CallToolResult]: The created product variants on success,
         or a CallToolResult describing the error.
+
+    Note:
+        If there is base64 data of the image, pass the string as property of ProductVariantData, otherwise
+        use image_url - this is used to download the image from internet and convert it to base64 data.
+        Use None for both, if there is no image.
     """
     api_url = ctx.request_context.lifespan_context.memcommerce_api_url
+    try:
+        variants_data: list[ProductVariantData] = []
+        for vc in variants_create:
+            image_data = (
+                await download_and_convert_image(vc.image_url) if vc.image_url else None
+            )
+            print(image_data)
+            variant_data = ProductVariantData(
+                price=vc.price,
+                product_id=vc.product_id,
+                color_id=vc.color_id,
+                size_id=vc.size_id,
+                image=image_data,
+            )
+            variants_data.append(variant_data)
+    except Exception as e:
+        return CallToolResult(
+            isError=True,
+            content=[
+                TextContent(type="text", text=f"Image download and covert error: {e}")
+            ],
+        )
 
     try:
         variants = await post_pvs(variants_data, api_url)

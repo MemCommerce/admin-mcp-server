@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -9,8 +11,13 @@ class ProductVariantBase(BaseModel):
 
 
 class ProductVariantData(ProductVariantBase):
-    pass
+    image: Optional[str] = None
+
+
+class ProductVariantCreate(ProductVariantBase):
+    image_url: Optional[str] = None
 
 
 class ProductVariant(ProductVariantBase):
     id: str
+    image_url: Optional[str] = None
