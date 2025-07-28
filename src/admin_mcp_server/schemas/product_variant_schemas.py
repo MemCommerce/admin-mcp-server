@@ -11,11 +11,11 @@ class ProductVariantBase(BaseModel):
 
 
 class ProductVariantData(ProductVariantBase):
-    image: Optional[str] = None
+    image_name: Optional[str] = None
 
 
 class ProductVariantCreate(ProductVariantBase):
-    image_url: Optional[str] = None
+    image_url: str
 
 
 class ProductVariant(ProductVariantBase):

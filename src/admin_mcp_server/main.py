@@ -5,7 +5,7 @@ from mcp.types import CallToolResult, TextContent
 
 from config import mcp, AppContext
 from exceptions import MemCommerceAPIException
-from utils.image_utils import download_and_convert_image
+from utils.image_utils import extract_image_name_from_signed_url
 from schemas.size_schemas import Size, SizeData
 from schemas.category_schemas import Category, CategoryData
 from schemas.color_schemas import Color, ColorData
@@ -76,38 +76,33 @@ async def add_product_variants(
             - `product_id`: ID of the associated product
             - `color_id`: ID of the selected color
             - `size_id`: ID of the selected size
-            - `image_url`: Optional string for image url
+            - `image_url`: The image url
 
     Returns:
         Union[list[ProductVariant], CallToolResult]: The created product variants on success,
         or a CallToolResult describing the error.
 
-    Note:
-        If there is base64 data of the image, pass the string as property of ProductVariantData, otherwise
-        use image_url - this is used to download the image from internet and convert it to base64 data.
-        Use None for both, if there is no image.
     """
     api_url = ctx.request_context.lifespan_context.memcommerce_api_url
     try:
         variants_data: list[ProductVariantData] = []
         for vc in variants_create:
-            image_data = (
-                await download_and_convert_image(vc.image_url) if vc.image_url else None
-            )
-            print(image_data)
+            print(vc.image_url)
+            image_name = extract_image_name_from_signed_url(vc.image_url)
+        
             variant_data = ProductVariantData(
                 price=vc.price,
                 product_id=vc.product_id,
                 color_id=vc.color_id,
                 size_id=vc.size_id,
-                image=image_data,
+                image_name=image_name,
             )
             variants_data.append(variant_data)
     except Exception as e:
         return CallToolResult(
             isError=True,
             content=[
-                TextContent(type="text", text=f"Image download and covert error: {e}")
+                TextContent(type="text", text=f"Image name extraction failed: {e}")
             ],
         )
 

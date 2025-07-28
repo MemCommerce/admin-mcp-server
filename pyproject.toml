@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "mcp>1.9.3",
+    "mcp>=1.12.2",
     "modular-mcp>=0.3.0",
     "pillow>=11.2.1",
 ]

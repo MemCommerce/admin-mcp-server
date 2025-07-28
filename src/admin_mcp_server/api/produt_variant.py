@@ -15,7 +15,7 @@ async def get_all_pvs(base_url: str) -> list[ProductVariant]:
 async def post_pvs(
     pvs_data: list[ProductVariantData], base_url: str
 ) -> list[ProductVariant]:
-    url = f"{base_url}/product-variants/"
+    url = f"{base_url}/product-variants/with-temp-image"
     post_requests = [
         safe_request("POST", url, json=pv_data.model_dump()) for pv_data in pvs_data
     ]

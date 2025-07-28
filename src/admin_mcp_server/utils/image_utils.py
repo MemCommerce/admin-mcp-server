@@ -1,6 +1,7 @@
 import base64
 from typing import Optional
 from io import BytesIO
+from urllib.parse import urlparse
 
 from httpx import AsyncClient
 from PIL import Image
@@ -58,3 +59,22 @@ async def download_and_convert_image(image_url: str) -> Optional[str]:
         mime_type = mime_types.get(original_format, "image/jpeg")
 
         return f"data:{mime_type};base64,{base64_string}"
+
+
+def extract_image_name_from_signed_url(signed_url):
+    """
+    Extracts the image name (blob name) from a Google Cloud Storage signed URL.
+    """
+    parsed_url = urlparse(signed_url)
+    
+    path_components = parsed_url.path.split('/')
+    
+    if len(path_components) > 2:
+        image_name = '/'.join(path_components[2:])
+    else:
+        image_name = path_components[-1]
+        
+    if '?' in image_name:
+        image_name = image_name.split('?')[0]
+        
+    return image_name
