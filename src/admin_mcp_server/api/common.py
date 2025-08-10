@@ -16,6 +16,8 @@ async def safe_request(
                 response = await client.get(url, **kwargs)
             elif method == "POST":
                 response = await client.post(url, **kwargs)
+            elif method == "PATCH":
+                response = await client.patch(url, **kwargs)
             else:
                 raise ValueError(f"Unsupported method: {method}")
 

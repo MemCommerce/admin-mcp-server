@@ -20,6 +20,11 @@ from api.category import get_all_categories, post_categories
 from api.color import get_all_colors, post_colors
 from api.product import get_all_products, post_products
 from api.produt_variant import get_all_pvs, post_pvs
+from schemas.order_schemas import Order
+from api.order import (
+    get_orders as api_get_orders,
+    mark_order_delivered as api_mark_order_delivered,
+)
 
 
 @mcp.tool()
@@ -89,7 +94,7 @@ async def add_product_variants(
         for vc in variants_create:
             print(vc.image_url)
             image_name = extract_image_name_from_signed_url(vc.image_url)
-        
+
             variant_data = ProductVariantData(
                 price=vc.price,
                 product_id=vc.product_id,
@@ -370,6 +375,74 @@ async def add_sizes(
         )
 
     return sizes
+
+
+@mcp.tool()
+async def list_orders(
+    ctx: Context[Any, AppContext],
+    page: int = 1,
+    limit: int = 10,
+    status: str | None = None,
+) -> Union[list[Order], CallToolResult]:
+    """Retrieve a paginated list of orders.
+
+    Orders represent purchases made by users and include details such as
+    their current status and total price. This tool lets administrators
+    browse orders page by page and optionally filter by a specific status
+    (e.g., ``"pending"`` or ``"delivered"``).
+
+    Args:
+        ctx (Context[Any, AppContext]): FastMCP context providing configuration.
+        page (int, optional): Page number starting from 1. Defaults to 1.
+        limit (int, optional): Number of orders per page, up to 100. Defaults to 10.
+        status (str | None, optional): Filter results by order status.
+
+    Returns:
+        Union[list[Order], CallToolResult]: A list of Order objects on success,
+        or a CallToolResult if the request fails.
+
+        The Order Pydantic model attributes:
+            - id: str
+            - status: str
+            - user_id: Optional[str]
+            - total_price: Optional[float]
+    """
+    api_url = ctx.request_context.lifespan_context.memcommerce_api_url
+    try:
+        orders = await api_get_orders(api_url, page=page, limit=limit, status=status)
+    except MemCommerceAPIException as e:
+        return CallToolResult(
+            isError=True,
+            content=[TextContent(type="text", text=f"MemCommerce API Error: {e}")],
+        )
+
+    return orders
+
+
+@mcp.tool()
+async def mark_order_delivered(
+    order_id: str, ctx: Context[Any, AppContext]
+) -> Union[Order, CallToolResult]:
+    """Mark an order as delivered in the MemCommerce API.
+
+    Args:
+        order_id (str): Identifier of the order to update.
+        ctx (Context[Any, AppContext]): FastMCP context providing configuration.
+
+    Returns:
+        Union[Order, CallToolResult]: The updated Order with status
+        ``"delivered"`` on success, or a CallToolResult describing the error.
+    """
+    api_url = ctx.request_context.lifespan_context.memcommerce_api_url
+    try:
+        order = await api_mark_order_delivered(order_id, api_url)
+    except MemCommerceAPIException as e:
+        return CallToolResult(
+            isError=True,
+            content=[TextContent(type="text", text=f"MemCommerce API Error: {e}")],
+        )
+
+    return order
 
 
 def main():
